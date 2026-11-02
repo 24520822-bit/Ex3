@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   color: #f3f4f6;
-  background: #111827;
+  background: #0b1018;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,5 +17,215 @@ body {
 main {
   max-width: 72rem;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 3.5rem 2rem;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.65rem;
+  color: #95a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0.65rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -0.045em;
+}
+
+.dashboard-description {
+  margin-bottom: 0;
+  color: #a7b2c2;
+}
+
+.squad-picker {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 15rem;
+}
+
+.squad-picker label {
+  color: #c4cfdd;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.squad-picker select {
+  min-height: 2.8rem;
+  padding: 0.65rem 2.5rem 0.65rem 0.85rem;
+  border: 1px solid #354153;
+  border-radius: 0.6rem;
+  color: #f3f4f6;
+  background: #151e2b;
+  font: inherit;
+}
+
+.telemetry-panel {
+  overflow: hidden;
+  padding: 1.5rem;
+  border: 1px solid #273344;
+  border-radius: 1rem;
+  background:
+    radial-gradient(ellipse at 50% 45%, #1a2835 0%, #111a26 58%, #101722 100%);
+  box-shadow: 0 1.5rem 4rem #0005;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.panel-heading h2 {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+}
+
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #a8b5c5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.live-indicator span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #5de0a0;
+  box-shadow: 0 0 0.8rem #5de0a088;
+}
+
+.radar-stage {
+  display: grid;
+  min-height: 21rem;
+  place-items: center;
+}
+
+.radar-chart,
+.radar-skeleton svg {
+  display: block;
+  width: min(100%, 28rem);
+  overflow: visible;
+}
+
+.radar-grid,
+.radar-skeleton polygon {
+  fill: #101a25;
+  stroke: #425166;
+  stroke-width: 1;
+}
+
+.radar-axis,
+.radar-skeleton line {
+  stroke: #425166;
+  stroke-width: 1;
+}
+
+.radar-data {
+  fill: #ef5c40;
+  fill-opacity: 0.32;
+  stroke: #ff7558;
+  stroke-width: 2.5;
+}
+
+.radar-center {
+  fill: #ff987f;
+}
+
+.radar-label {
+  fill: #c5cfdd;
+  font-size: 11px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.chart-caption {
+  margin: 0;
+  color: #8795a8;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.radar-skeleton {
+  display: grid;
+  width: min(100%, 28rem);
+  place-items: center;
+}
+
+.radar-skeleton polygon,
+.radar-skeleton line,
+.radar-skeleton circle {
+  animation: skeleton-pulse 1.4s ease-in-out infinite alternate;
+}
+
+.radar-skeleton circle {
+  fill: #435166;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@keyframes skeleton-pulse {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 2rem 1rem;
+  }
+
+  .dashboard-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .telemetry-panel {
+    padding: 1.1rem;
+  }
+
+  .radar-stage {
+    min-height: 18rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

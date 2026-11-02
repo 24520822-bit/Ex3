@@ -1,7 +1,5 @@
+import { SquadTelemetryDashboard } from "./components/SquadTelemetryDashboard";
+
 export default function App() {
-  return (
-    <main>
-      <h1>PUBG Squad Telemetry</h1>
-    </main>
-  );
+  return <SquadTelemetryDashboard />;
 }
