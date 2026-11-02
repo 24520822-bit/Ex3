@@ -14,7 +14,7 @@ export function SquadTelemetryDashboard({
   request,
 }: SquadTelemetryDashboardProps) {
   const [squadId, setSquadId] = useState<SquadId>(SQUADS[0].id);
-  const { state } = useSquadTelemetry(squadId, request);
+  const { state, retry } = useSquadTelemetry(squadId, request);
   const selectedSquad = SQUADS.find((squad) => squad.id === squadId);
 
   if (!selectedSquad) {
@@ -76,6 +76,14 @@ export function SquadTelemetryDashboard({
               squadName={selectedSquad.name}
               telemetry={state.data}
             />
+          )}
+          {state.status === "ERROR" && state.squadId === squadId && (
+            <div className="telemetry-error" role="alert">
+              <p>{state.error.message}</p>
+              <button type="button" onClick={retry}>
+                Retry
+              </button>
+            </div>
           )}
         </div>
         <p className="chart-caption">

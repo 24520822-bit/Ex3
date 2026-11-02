@@ -1,7 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { SquadTelemetry } from "../data/squads";
-import { requestTelemetry } from "../data/telemetryRequest";
+import {
+  requestTelemetry,
+  TelemetryRequestError,
+} from "../data/telemetryRequest";
 import { SquadTelemetryDashboard } from "./SquadTelemetryDashboard";
 
 function deferred<T>() {
@@ -94,5 +98,55 @@ describe("SquadTelemetryDashboard", () => {
         name: "Telemetry radar chart for Cerberus Esports",
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it("announces packet loss inline with a retry action", async () => {
+    const request = vi
+      .fn<typeof requestTelemetry>()
+      .mockRejectedValue(new TelemetryRequestError("packet-loss"));
+    render(<SquadTelemetryDashboard request={request} />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Telemetry packet loss occurred.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Retry" }),
+    ).toBeInTheDocument();
+  });
+
+  it("retries a timeout with the keyboard without showing a browser alert", async () => {
+    const retryResponse = deferred<SquadTelemetry>();
+    const request = vi
+      .fn<typeof requestTelemetry>()
+      .mockRejectedValueOnce(new TelemetryRequestError("timeout"))
+      .mockReturnValueOnce(retryResponse.promise);
+    const alert = vi.spyOn(window, "alert").mockImplementation(() => {});
+    const user = userEvent.setup();
+    render(<SquadTelemetryDashboard request={request} />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Telemetry request timed out.",
+    );
+    const retryButton = screen.getByRole("button", { name: "Retry" });
+    retryButton.focus();
+    expect(retryButton).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    expect(
+      await screen.findByRole("status", {
+        name: "Loading Cerberus Esports telemetry",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(request).toHaveBeenCalledTimes(2);
+
+    await act(async () => retryResponse.resolve(telemetry));
+    expect(
+      await screen.findByRole("img", {
+        name: "Telemetry radar chart for Cerberus Esports",
+      }),
+    ).toBeInTheDocument();
+    expect(alert).not.toHaveBeenCalled();
+    alert.mockRestore();
   });
 });

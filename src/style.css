@@ -166,6 +166,45 @@ h1 {
   text-align: center;
 }
 
+.telemetry-error {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  max-width: 24rem;
+  padding: 1.5rem;
+  border: 1px solid #713c3c;
+  border-radius: 0.75rem;
+  color: #ffd5ce;
+  background: #351f24;
+  text-align: center;
+}
+
+.telemetry-error p {
+  margin: 0;
+}
+
+.telemetry-error button {
+  min-height: 2.6rem;
+  padding: 0.55rem 1.2rem;
+  border: 0;
+  border-radius: 0.5rem;
+  color: #17110e;
+  background: #ff987f;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.telemetry-error button:hover {
+  background: #ffad98;
+}
+
+.telemetry-error button:focus-visible,
+.squad-picker select:focus-visible {
+  outline: 3px solid #ffd1a3;
+  outline-offset: 3px;
+}
+
 .radar-skeleton {
   display: grid;
   width: min(100%, 28rem);
