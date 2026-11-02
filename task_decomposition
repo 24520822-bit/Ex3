@@ -1,0 +1,83 @@
+# Task decomposition — Ex3: PUBG squad telemetry
+
+## Mục tiêu
+
+Xây dựng giao diện telemetry trực tiếp cho ba đội **Cerberus Esports**, **The Expendables** và **Genius Esports** theo đặc tả Exercise 3. Người dùng chọn đội và theo dõi dữ liệu radar; trải nghiệm phải biểu đạt rõ các trạng thái tải, thành công, lỗi và cho phép thử lại an toàn.
+
+Đây là kế hoạch triển khai để người dùng duyệt trước khi bắt đầu code. Mỗi mục dưới đây tương ứng một commit riêng; chạy các kiểm tra nêu trong mục đó trước khi ghi nhận commit. Không triển khai cho tới khi tài liệu này được duyệt.
+
+## Đặc tả và tiêu chí nghiệm thu
+
+- Chỉ cung cấp đúng ba đội đã nêu; chọn đội khác sẽ tải telemetry tương ứng.
+- Luồng tải có bốn trạng thái rõ ràng: `IDLE`, `LOADING`, `SUCCESS`, `ERROR`.
+- Trong lúc tải, hiện skeleton radar thay vì biểu đồ/dữ liệu thành công giả.
+- Mô phỏng tình huống mất gói với xác suất 35% và timeout; lỗi được hiển thị inline, có thể truy cập, cùng nút **Retry**. Không dùng `alert`.
+- Đổi đội phải hủy yêu cầu trước đó bằng `AbortController`; `AbortError` do hủy có chủ đích không được hiển thị như lỗi tải.
+- Retry phải kích hoạt lần tải mới (retry tick/dependency), kể cả khi đội được chọn không đổi.
+- Dữ liệu radar chỉ hiển thị khi tải thành công; trạng thái lỗi không để lại dữ liệu cũ gây hiểu nhầm là dữ liệu của đội hiện tại.
+- Kiểm tra hành vi cho cả tải thành công, mất gói/timeout, retry và đổi đội khi yêu cầu cũ còn đang chạy.
+
+## Bối cảnh repository, ràng buộc và giả định
+
+- Repository hiện chỉ có `.git` và commit khởi tạo; chưa có mã nguồn, manifest, ứng dụng, test runner hay lệnh test/lint/typecheck để dựa vào. Vì vậy không thể khẳng định trước tên lệnh test hoặc xác nhận một test hiện hữu.
+- Người dùng đã chọn **React + TypeScript**. Commit đầu thiết lập tooling tối thiểu tương thích với môi trường có sẵn; dùng các thư viện test UI phù hợp cho stack này, không lấy ví dụ code trong ảnh làm implementation cần sao chép.
+- Đặc tả hiện có không chỉ rõ payload schema/giá trị radar hoặc DOM/layout pixel-perfect. Builder dùng các trường/nhãn thể hiện trong đặc tả nếu được cung cấp; nếu không, chọn model nhỏ nhất nhất quán để minh họa telemetry của ba đội và tự dựng radar SVG gọn, không phụ thuộc vào một ví dụ code cụ thể. Đây là lựa chọn triển khai, không phải yêu cầu bổ sung.
+- Giữ các ranh giới dễ kiểm thử: dữ liệu đội, mô phỏng request, logic trạng thái và giao diện. Mô phỏng cần cho phép điều khiển ngẫu nhiên/thời gian trong test để xác minh chính xác xác suất lỗi 35%, timeout và retry mà không làm test chập chờn.
+- Không mở rộng sang telemetry thật, backend, xác thực, lưu trữ hoặc tính năng ngoài đặc tả.
+
+## Các commit theo thứ tự
+
+### Task 1 — Commit 1: `chore: establish app and test baseline`
+
+**Phạm vi:** Tạo cấu trúc ứng dụng React + TypeScript tối thiểu và cấu hình build/test/lint/typecheck tương thích với môi trường bài tập. Thêm một smoke test nhỏ chứng minh app và test runner chạy được. Không đưa logic telemetry vào commit này.
+
+**Kiểm tra vòng này:** Chạy smoke test React; chạy build và các kiểm tra tĩnh đã cấu hình. Ghi rõ các lệnh thực tế trong kết quả triển khai; hiện repository chưa có lệnh nào để chạy.
+
+### Task 2 — Commit 2: `feat: add squad telemetry model`
+
+**Phạm vi:** Khai báo kiểu dữ liệu telemetry cần cho radar và dữ liệu/định danh của đúng ba đội. Không gắn dữ liệu thành công vào giao diện trước khi request hoàn tất.
+
+**Kiểm tra vòng này:** Unit test xác nhận đủ và đúng ba đội, dữ liệu mỗi đội có cấu trúc hợp lệ cho radar; chạy lại smoke test và TypeScript typecheck.
+
+### Task 3 — Commit 3: `feat: simulate telemetry requests`
+
+**Phạm vi:** Tạo lớp mô phỏng request có độ trễ, timeout và xác suất packet loss 35%; nhận `AbortSignal`, hủy tác vụ đang chờ đúng cách và cho phép test kiểm soát nguồn ngẫu nhiên/thời gian. Không bắt hoặc biến `AbortError` thành lỗi mạng thông thường ở tầng mô phỏng.
+
+**Kiểm tra vòng này:** Unit test cho thành công, packet loss tại ngưỡng 35% (ngẫu nhiên dưới `0.35` thất bại, từ `0.35` trở lên không thất bại do packet loss), timeout, hủy trước khi hoàn tất và không resolve/reject muộn sau khi đã hủy; dùng fake timers và nguồn ngẫu nhiên mock xác định, không dựa vào chờ ngẫu nhiên thật. Chạy lại test và kiểm tra tĩnh.
+
+### Task 4 — Commit 4: `feat: manage telemetry loading states`
+
+**Phạm vi:** Xây logic tải với các trạng thái `IDLE`/`LOADING`/`SUCCESS`/`ERROR`, bắt đầu lại khi đội thay đổi hoặc retry tick đổi, hủy request trước khi thay thế, và bỏ qua `AbortError` do cleanup/đổi đội. Đảm bảo response cũ không ghi đè kết quả của request mới.
+
+**Kiểm tra vòng này:** Unit/integration test cho chuyển trạng thái; chọn đội mới trong khi request cũ còn chạy; xác minh request cũ bị abort, không tạo thông báo lỗi và không ghi đè dữ liệu đội mới; retry tạo request mới; lỗi thật chuyển sang `ERROR`. Chạy lại toàn bộ test đã có và typecheck.
+
+### Task 5 — Commit 5: `feat: render squad radar and loading skeleton`
+
+**Phạm vi:** Thêm lựa chọn ba đội, biểu đồ radar cho dữ liệu `SUCCESS`, và skeleton radar trong `LOADING`. Hiển thị trạng thái rỗng thích hợp ở `IDLE`; không hiện biểu đồ thành công trong khi tải hoặc sau lỗi.
+
+**Kiểm tra vòng này:** Component test cho danh sách đội, skeleton khi tải, radar khi thành công và không hiển thị dữ liệu cũ khi đổi đội; chạy lại test, build và kiểm tra tĩnh.
+
+### Task 6 — Commit 6: `feat: add accessible retryable error state`
+
+**Phạm vi:** Hiển thị lỗi timeout/mất gói inline với ngữ nghĩa truy cập phù hợp và nút **Retry**; Retry tăng tick/kích hoạt lại luồng tải hiện có, không tạo luồng song song khác. Không dùng `alert`.
+
+**Kiểm tra vòng này:** Component test xác nhận lỗi được công bố qua vùng thông báo phù hợp, nút Retry thao tác được bằng bàn phím, nhấn Retry chuyển lại `LOADING` rồi tới kết quả mới; xác nhận không gọi `alert`. Chạy lại toàn bộ test và kiểm tra tĩnh.
+
+### Task 7 — Commit 7: `test: cover telemetry lifecycle regressions`
+
+**Phạm vi:** Bổ sung/hoàn thiện kiểm thử tích hợp theo các luồng nghiệm thu: ba đội, tải thành công, 35% packet loss, timeout, Retry, đổi đội giữa request, hủy an toàn và ngăn kết quả cũ ghi đè. Chỉ sửa lỗi phát hiện trong phạm vi đặc tả.
+
+**Kiểm tra vòng này:** Chạy toàn bộ test tự động, build, lint và typecheck đã thiết lập; kiểm tra thủ công luồng chính trên ứng dụng. Báo rõ kiểm tra nào chưa thể tự động hóa hoặc môi trường nào chưa sẵn có, không tuyên bố test chưa chạy là đạt.
+
+## Quy trình mỗi vòng và điểm dừng
+
+1. Chỉ bắt đầu sau khi người dùng duyệt tài liệu decomposition này.
+2. Thực hiện đúng phạm vi của một commit; chạy các kiểm tra đã nêu và sửa lỗi trong phạm vi trước khi kết thúc vòng.
+3. Báo kết quả kiểm tra thực tế (lệnh, đạt/trượt và giới hạn nếu có) để người dùng xem xét; không gộp nhiều mục thành một commit lớn.
+4. Nếu stack hoặc môi trường chấm khiến một kiểm tra không phù hợp, giải thích và đề xuất kiểm tra tương đương trước khi thay đổi kế hoạch.
+
+## Khoảng trống cần giữ minh bạch
+
+- Chưa có repository code, dependency, test runner hay lệnh kiểm tra ban đầu; lựa chọn phiên bản/package manager và lệnh cuối cùng chỉ xác định được ở commit 1, tương thích React + TypeScript.
+- Ảnh đặc tả không cung cấp backend hay dữ liệu telemetry thật; kế hoạch chỉ bao gồm mô phỏng như yêu cầu.
+- Nếu môi trường chấm áp đặt phiên bản cụ thể, xác minh tương thích trước khi chọn phiên bản ở commit 1; không suy ra framework/implementation từ đoạn code tham khảo.
