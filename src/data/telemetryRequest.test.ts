@@ -57,6 +57,25 @@ describe("requestTelemetry", () => {
     expect(error).toMatchObject({ code: "timeout" });
   });
 
+  it("can randomly simulate a timeout before the request delay completes", async () => {
+    vi.useFakeTimers();
+    const randomValues = [0.8, 0.05];
+    const request = requestTelemetry("cerberus-esports", {
+      signal: new AbortController().signal,
+      random: () => randomValues.shift() ?? 0.8,
+      delayMs: 20,
+      timeoutMs: 40,
+    });
+
+    const result = request.then(
+      () => null,
+      (error: unknown) => error,
+    );
+    await vi.advanceTimersByTimeAsync(40);
+
+    expect(await result).toMatchObject({ code: "timeout" });
+  });
+
   it("rejects with AbortError and clears timers when cancelled", async () => {
     vi.useFakeTimers();
     const controller = new AbortController();

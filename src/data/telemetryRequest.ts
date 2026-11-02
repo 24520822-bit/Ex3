@@ -19,6 +19,7 @@ export interface TelemetryRequestOptions {
   random?: () => number;
   delayMs?: number;
   timeoutMs?: number;
+  timeoutProbability?: number;
 }
 
 export function requestTelemetry(
@@ -28,6 +29,7 @@ export function requestTelemetry(
     random = Math.random,
     delayMs = 800,
     timeoutMs = 4_000,
+    timeoutProbability = 0.1,
   }: TelemetryRequestOptions,
 ): Promise<SquadTelemetry> {
   if (signal.aborted) {
@@ -38,6 +40,9 @@ export function requestTelemetry(
   if (!squad) {
     return Promise.reject(new Error(`Unknown squad: ${squadId}`));
   }
+
+  const packetLost = random() < 0.35;
+  const willTimeout = !packetLost && random() < timeoutProbability;
 
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -67,16 +72,18 @@ export function requestTelemetry(
     };
 
     signal.addEventListener("abort", onAbort, { once: true });
-    timers.push(
-      setTimeout(() => {
-        if (random() < 0.35) {
-          finishReject(new TelemetryRequestError("packet-loss"));
-          return;
-        }
+    if (!willTimeout && delayMs < timeoutMs) {
+      timers.push(
+        setTimeout(() => {
+          if (packetLost) {
+            finishReject(new TelemetryRequestError("packet-loss"));
+            return;
+          }
 
-        finishResolve({ ...squad.telemetry });
-      }, delayMs),
-    );
+          finishResolve({ ...squad.telemetry });
+        }, delayMs),
+      );
+    }
     timers.push(
       setTimeout(() => {
         finishReject(new TelemetryRequestError("timeout"));
